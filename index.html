@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimalistyczny generator faktur UE</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
+  <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"
+      integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ="
+      crossorigin="anonymous"
+  >
+  </script>
+</head>
+<body>
+
+<!--BODY-->
+<div id="settings-area" style="position: absolute; top: 0; left: 0; width: 15vw; height: 80vh; display: table-row">
+  <textarea name="dane sprzedającego" id="input-seller-data" cols="30" rows="10" placeholder="dane sprzedającego"></textarea>
+  <textarea name="dane kupującego" id="input-acquirer-data" cols="30" rows="10" placeholder="dane kupującego"></textarea>
+
+  <input placeholder="ID faktury" type="text" id="input-invoice-id">
+  <input placeholder="data realizacji" type="text" id="input-date-of-realization">
+  <input placeholder="data sprzedarzy" type="text" id="input-date-of-selling">
+  <input placeholder="data zapłaty" type="text" id="input-date-of-payment">
+
+  <input placeholder="Kwota w walucie obcej" type="text" id="input-money-external-currency">
+  <input placeholder="Kwota słownie" type="text" id="input-money-spelled-out">
+  <input placeholder="Symbol waluty" type="text" id="input-currency-symbol">
+  <input placeholder="Data waluty" type="text" id="input-currency-date">
+  <input placeholder="Numer tabeli waluty" type="text" id="input-currency-table-number">
+  <button id="reload-button">Przeładuj</button>
+</div>
+<div class="main centered">
+  <div class="logo centered">
+    <img src="https://as1.ftcdn.net/jpg/00/92/53/56/500_F_92535664_IvFsQeHjBzfE6sD4VHdO8u5OHUSc6yHF.jpg" alt="***">
+  </div>
+  <div class="time-date centered">
+    <table>
+      <tr>
+        <th>
+          Faktura VAT nr / invoice:
+        </th>
+        <th id="invoice-id">
+
+        </th>
+      </tr>
+      <tr>
+        <td>Data wystawienia (date of realization):</td>
+        <td id="date-of-realization"></td>
+      </tr>
+      <tr>
+        <td>Data sprzedaży (date of selling):</td>
+        <td id="date-of-selling"></td>
+      </tr>
+      <tr>
+        <td>Termin płatności (term of payment):</td>
+        <td id="date-of-payment"></td>
+      </tr>
+      <tr>
+        <td>Metoda płatności (method of payment)</td>
+        <td>przelew / bank transfer</td>
+      </tr>
+    </table>
+  </div>
+  <div id="seller-data">
+    <strong>Sprzedawca (vendor)</strong>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+  </div>
+  <div id="acquirer-data">
+    <strong>Nabywca (acquirer)</strong>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+  </div>
+  <h1 style="color: lightgray; margin-left: auto; grid-column-end: -1">ORYGINAŁ</h1>
+
+  <!--  https://www.youtube.com/watch?v=R-4KROtI1yM -->
+  <table id="money">
+    <tr>
+      <th>#</th>
+      <th>Nazwa (name)</th>
+      <th>Jednostka (unit)</th>
+      <th>Ilość (quantity)</th>
+      <th>Cena netto (net price)</th>
+      <th>Stawka (tariff)</th>
+      <th>Wartość netto (net value)</th>
+      <th>Wartość brutto (gross value)</th>
+    </tr>
+
+    <tr>
+      <td>1</td>
+      <td id="service-name"></td>
+      <td>szt. (pc.)</td>
+      <td>1</td>
+      <td class="money-external-currency"></td>
+      <td>nie podl. UE</td>
+      <td class="money-external-currency"></td>
+      <td class="money-external-currency"></td>
+    </tr>
+  </table>
+
+
+  <table id="summary">
+    <tr>
+      <td>Stawka VAT</td>
+      <td>Wartość netto</td>
+      <td>Kwota VAT</td>
+      <td>Wartość brutto</td>
+    </tr>
+    <tr>
+      <td>Nie podl. UE</td>
+      <td class="money-pln"></td>
+      <td>0.00</td>
+      <td class="money-pln"></td>
+    </tr>
+    <tr>
+      <td>Razem/total</td>
+      <td class="money-pln"></td>
+      <td>0.00</td>
+      <td class="money-pln"></td>
+    </tr>
+  </table>
+
+  <table id="summary-2">
+    <tr>
+      <td>Zapłacono (paid)</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <td>Do zapłaty (to be paid)</td>
+      <td class="money-external-currency"></td>
+    </tr>
+    <tr>
+      <td>Razem (Total)</td>
+      <td class="money-external-currency"></td>
+    </tr>
+    <tr>
+      <td>
+        słownie <span id="money-spelled-out"></span>
+      </td>
+    </tr>
+  </table>
+
+  <div id="summary-3">
+    <h3>Odwrotne obciążenie</h3>
+    <p>1 <span id="currency-symbol"></span>: <span class="currency-value">5.4540</span>PLN</p>
+    <p>Kurs z dnia: <span class="currency-date">2019.07.29</span></p>
+    <p>Numer tabeli: <span class="currency-table-number">211/A/NBP/2012</span></p>
+  </div>
+
+</div>
+
+<!--STYLING-->
+<style>
+  html {
+    font-family: 'Montserrat', sans-serif;
+  }
+  .centered {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    justify-items: center;
+    align-items: start;
+  }
+
+  .main {
+    margin-left: 30%;
+    margin-top: 5%;
+    border: 1px solid black;
+    width: 216mm; /* A4 */
+    height: 279mm; /* A4 */
+    display: grid;
+    padding: 10mm;
+
+    grid-gap: 3rem;
+
+    grid-template-columns: 2fr 3fr;
+    grid-template-rows: repeat(6, 1fr);
+
+    line-height: 0.3rem;
+  }
+
+  table {
+    line-height: 0.9rem;
+    border: 1px solid darkgray;
+    font-size: 0.8rem;
+    width: 100%;
+    height: 100%;
+    padding: 0.7rem;
+    text-align: center;
+  }
+
+  #money {
+    grid-column: 1 / -1;
+  }
+
+  #summary-3 {
+    grid-column: 1 / -2;
+    font-size: 0.8rem;
+    color: #2f2f2f;
+  }
+
+  .time-date {
+    grid-column: 2 / -1;
+    width: 100%;
+  }
+
+  img {
+    object-fit: cover;
+    width: 100%;
+    height: auto;
+  }
+</style>
+
+<script src="./generator.js"></script>
+</body>
+</html>
