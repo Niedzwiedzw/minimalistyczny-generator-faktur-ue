@@ -56,7 +56,7 @@ function renderDataObj(obj) {
 
 function renderArray(data, id) {
     let element = document.getElementById(id);
-    for (let p of element.getElementsByTagName('p')) {
+    for (let p of _.reverse(element.getElementsByTagName('p'))) {
         p.remove();
     }
 
